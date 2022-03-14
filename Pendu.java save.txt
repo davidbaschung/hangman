@@ -1,0 +1,154 @@
+package main;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+public class Pendu extends JPanel{
+	
+	private JLabel ecran = new JLabel();
+	private JPanel ecranPan = new JPanel();
+	private JPanel clavierPan = new JPanel();
+	private JPanel clavierPanP1 = new JPanel();
+	private JPanel clavierPanP2 = new JPanel();
+	private JPanel clavierPanP3 = new JPanel();
+	private Image image = new ImageIcon("./images/fondmenu.jpg").getImage();;
+	private JLabel imageLabel;
+	
+	private String touches = "qwertzuiopasdfghjklyxcvbnm";
+	private String secret = "";
+	private String secretCache = "";
+	private int coups =  0;
+	
+	public Pendu() {
+		
+//		this.setSize(800,500);
+		this.setLayout(new BorderLayout());
+		
+		nouveauJeu();
+		
+		afficher();
+	}
+	
+	private void afficher() {
+		image = image.getScaledInstance(image.getWidth(this)/3,image.getHeight(this)/3,Image.SCALE_DEFAULT); // redimensionnage
+		JLabel imageLabel = new JLabel(new ImageIcon(image));
+		
+		
+		ecranPan.setBackground(Color.WHITE); // pas pour JLabel
+		ecranPan.setSize(300,200);
+		ecran.setFont(new Font("Serif", Font.BOLD, 50));
+		ecran.setForeground(Color.GREEN.darker());
+		
+		clavierPan.setLayout(new BorderLayout());
+		
+		for (int i=0;i<touches.length();i++) {
+			JButton b = new JButton(Character.toString(touches.charAt(i)));
+			b.setPreferredSize(new Dimension(65,65));
+			b.addActionListener(new clavierListener(touches.charAt(i))); // charAt pour récupérer une lettre (pas c[i] ni c.get(i))
+			if (i<10) {clavierPanP1.add(b);}
+			else if (i<19) {clavierPanP2.add(b);}
+			else {clavierPanP3.add(b);};
+		}
+		
+		this.add(imageLabel,BorderLayout.NORTH);
+		ecranPan.add(ecran,BorderLayout.NORTH);
+		this.add(ecranPan, BorderLayout.CENTER);
+		clavierPan.add(clavierPanP1,BorderLayout.NORTH);
+		clavierPan.add(clavierPanP2,BorderLayout.CENTER); 
+		clavierPan.add(clavierPanP3,BorderLayout.SOUTH);
+		this.add(clavierPan, BorderLayout.SOUTH);
+	}
+
+	private void nouveauJeu() { // on met throw pour le try/catch/finally. Surtout pour finally?
+		FileReader reader = null;
+		LineNumberReader lNReader = null;
+		String str;
+		int nombre = (int)(Math.random()*336529);
+		try {
+			reader = new FileReader("./dictionnaire.txt");
+			lNReader = new LineNumberReader(reader);
+			secret = "";
+			secretCache = "";
+			while ((str=lNReader.readLine())!=null) {
+				int i=lNReader.getLineNumber();
+				if (i==nombre) {
+					for (int j=0; j<str.length(); j++) {
+						char c = str.charAt(j);
+						if (str.charAt(j)=='é' | str.charAt(j)=='è' | str.charAt(j)=='ê' | str.charAt(j)=='ë') c = 'e';
+						if (str.charAt(j)=='à' | str.charAt(j)=='â' | str.charAt(j)=='ä') c = 'a';
+						if (str.charAt(j)=='ô' | str.charAt(j)=='ö') c = 'o';
+						if (str.charAt(j)=='ù' | str.charAt(j)=='û' | str.charAt(j)=='ü') c = 'u';
+						secret += Character.toString(c);
+						secretCache += '_';
+					}
+					break;
+				}
+			}
+			
+//			for (int i=0; i<secret.length();i++) {
+//				secretCache += "_";
+//			}
+			afficheMot();			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally  {
+			if (reader!=null)
+				try { // on re-try/catch si un finally implique du contenu du 1er try
+					reader.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+	}
+	
+	private void afficheMot() {
+		String secretAffiche = "";
+		for (int i=0; i<secretCache.length(); i++) {
+			secretAffiche += secretCache.charAt(i) + " ";
+		}
+		ecran.setText(secretAffiche);
+	}
+	
+	private class clavierListener implements ActionListener{
+		private char c;
+		private clavierListener(final char c) {
+			super();
+			this.c = c;
+		}
+		public void actionPerformed(ActionEvent e) {
+			String secretCacheProvisoire = "";
+			for (int i=0; i<secret.length();i++) {
+				char lettreSecret = secret.charAt(i);
+				char lettreSecretCache = secretCache.charAt(i);
+				if (lettreSecretCache == '_') {
+					if (c == lettreSecret) {// méthode String.equals(String) pas nécessaires pour des chars. "==" suffit.
+						secretCacheProvisoire += c;
+					} else {
+						secretCacheProvisoire += '_';
+					}
+				} else {
+					secretCacheProvisoire += lettreSecretCache;
+				}
+//				secretCacheProvisoire = secret.substring(0,i) + c + secret.substring(i+1,secret.length());
+			}
+			secretCache = secretCacheProvisoire;
+			afficheMot();
+			
+			((JButton)e.getSource()).setBackground(Color.LIGHT_GRAY);
+		}
+	}
+}
